@@ -32,10 +32,18 @@ def run_client(host, port):
             conn.sendall(request)
             # MSG_WAITALL waits for full request or error
             response = conn.recv(len(request), socket.MSG_WAITALL)
-            sys.stdout.write(response.decode("utf-8"))
+            sys.stdout.write(handle_request(response).decode("utf-8"))
     finally:
         conn.close()
 
+
+def handle_request(response: bytes) -> bytes:
+    line = 'default'
+    decoded = response.decode("utf-8")
+    if ('help' in decoded):
+        line = 'The commands are:\n   get executes a HTTP GET request and prints the response.\n    post executes a HTTP POST request and prints the response.\n    help prints this screen.\n\nUse "httpc help [command]" for more information about a command'
+    response = line.encode("utf-8")
+    return response   
 
 # Usage: python echoclient.py --host host --port port
 parser = argparse.ArgumentParser()
