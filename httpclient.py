@@ -27,12 +27,13 @@ def run_client(host, port):
         conn.connect((host, port))
         print("Type 'help' to get assistance. Press ENTER and then CTRL+C to quit.")
         while True:
-            line = sys.stdin.readline(1024)
+            line = input()
             request = line.encode("utf-8")
             conn.sendall(request)
             # MSG_WAITALL waits for full request or error
-            response = conn.recv(len(request), socket.MSG_WAITALL)
-            sys.stdout.write(handle_request(response).decode("utf-8"))
+            response = conn.recv(1024)
+            message = response.decode("utf-8")
+            print(message)
     finally:
         conn.close()
 

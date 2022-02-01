@@ -20,8 +20,13 @@ def handle_client(conn, addr):
     try:
         while True:
             data = conn.recv(1024)
+            data = data.decode("utf-8")
+            print(type(data))
             if not data:
                 break
+            if data == 'help':
+                data = 'I dont care'
+            data = data.encode("utf-8")
             conn.sendall(data)
     finally:
         conn.close()
