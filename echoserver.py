@@ -21,15 +21,13 @@ def handle_client(conn, addr):
     try:
         while True:
             data = conn.recv(1024)
-            line = bytes(data).decode("utf-8")
-            print('RECEIVED FROM CLIENT:',line)
-            message = line
-            if ('help' in line):
-                message = 'The commands are:\n   get executes a HTTP GET request and prints the response.\n    post executes a HTTP POST request and prints the response.\n    help prints this screen.\n\nUse "httpc help [command]" for more information about a command'        
-                data = message.encode("utf-8")
-            elif not data:
-                print('SOMETHING WRONG')
+            data = data.decode("utf-8")
+            print(type(data))
+            if not data:
                 break
+            if data == 'help':
+                data = 'I dont care'
+            data = data.encode("utf-8")
             conn.sendall(data)
     finally:
         conn.close()
