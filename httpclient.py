@@ -51,16 +51,27 @@ def run_client(host, port):
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         conn.connect((host, port))
-        print("Type any thing then ENTER. Press ENTER and then CTRL+C to quit.")
+        print("Type 'help' to get assistance. Press ENTER and then CTRL+C to quit.")
         while True:
-            line = sys.stdin.readline(1024)
+            line = input()
             request = line.encode("utf-8")
             conn.sendall(request)
             # MSG_WAITALL waits for full request or error
-            response = conn.recv(len(request), socket.MSG_WAITALL)
-            sys.stdout.write(response.decode("utf-8"))
+            response = conn.recv(1024)
+            message = response.decode("utf-8")
+            print(message)
     finally:
         conn.close()
+
+
+def handle_request(response: bytes) -> bytes:
+    line = 'default'
+    decoded = response.decode("utf-8")
+    if ('help' in decoded):
+        line = 'The commands are:\n\t get executes a HTTP GET request and prints the response.\n    post executes a HTTP POST request and prints the response.\n    help prints this screen.\n\nUse "httpc help [command]" for more information about a command'
+    response = line.encode("utf-8")
+    return response   
+
 
 def print_help_for_post_or_get(argument):
     if(argument == 'get' or argument == 'GET'):
