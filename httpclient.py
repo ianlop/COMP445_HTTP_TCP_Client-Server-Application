@@ -12,24 +12,14 @@ d.) Request headers
 e.) Body of the request
 
 Task 2.)
-(Perhaps on another py file?)
 Implementation of a cURL command line that does basic functionalities that
 are related to the HTTP protocol
-
-CLI notes:
-An argument is a single part of a command line, delimited by blanks.
-
-An option is a particular type of argument (or a part of an argument) that can modify the behavior of the command line.
-
-A parameter is a particular type of argument that provides additional information to a single option or command.
-
 '''
 import socket
 import argparse
 from typing import Text
-import requests
-import sys
 from xmlrpc.client import Boolean
+from urllib.parse import urlparse
 
 #verbose code we might use
 '''
@@ -59,30 +49,35 @@ class PayloadRequest:
         form = p_form
         json = p_json
 
-    def getRequest(self, url_link : Text | bytes):
-        url = url_link
+    #def getRequest(self, url_link : Text | bytes):
+     #   url = url_link
 
 
 
-def run_client(host, port):
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def get_request(host, port):
+    #host is the FULL url.
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    urlparser = urlparse(host)
+    #host name is 'httpbin.org', a "part" of the host variable/ full url
+    hostname = urlparser.hostname
+    #print(host)
+    #print(hostname)
     try:
-        conn.connect((host, port))
-        print("Type 'help' to get assistance. Press ENTER and then CTRL+C to quit.")
-        #line = input()
-        #request = line.encode("utf-8")
-        #conn.sendall(request)
-        target_host = input()
-        request = "GET / HTTP/1.1\r\nHost:%s\r\n\r\n" % target_host
+        #hostname: 'www.httpbin.org'
+        #host: http://httpbin.org/get?course=networking&assignment=1 
+        client.connect((hostname, port))
+
+        request = "GET " + host + " HTTP/1.0\r\n" \
+        "Host:%s\r\n\r\n" % hostname
         request = request.encode("utf-8")
-        conn.sendall(request)
+        
+        client.send(request)
         # MSG_WAITALL waits for full request or error
-        response = conn.recv(1024)
+        response = client.recv(1024)
         message = response.decode("utf-8")
         print(message)
     finally:
-        conn.close()
-
+        client.close()
 
 def handle_request(response: bytes) -> bytes:
     line = 'default'
@@ -110,66 +105,59 @@ def print_help_for_post_or_get(argument):
                 '-f file\t\tAssociates the content of a file to the body HTTP POST request.\n'\
                 "Either [-d] or [-f] can be used but not both.")
 
-#Usage: python echoclient.py --host host --port port
-#parser is container to hold our arguments
-parser = argparse.ArgumentParser(prog='httpc',
-                                description='httpc is a curl-like application but supports HTTP protocol only.',
-                                usage="\n\thttpclient.py command [arguments]", allow_abbrev=False,
-                                epilog='Use "httpclient.py help [command]" for more information about a command.')
-'''
-Syntactically, the difference between positional and optional arguments is 
-that optional arguments start with - or --, while positional arguments don’t.
-'''
 
-#positional arguments
-parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
-parser.add_argument("--port", help="Input the server port number", type=int, default=80, action="store")
-parser.add_argument("--get", help="executes a HTTP GET request and prints the response.", type=str)
+def main():
+    #Usage: python echoclient.py --host host --port port
+    #parser is container to hold our arguments
+    parser = argparse.ArgumentParser(prog='httpc',
+                                    description='httpc is a curl-like application but supports HTTP protocol only.',
+                                    usage="\n\thttpclient.py command [arguments]", allow_abbrev=False,
+                                    epilog='Use "httpclient.py help [command]" for more information about a command.')
+    '''
+    Syntactically, the difference between positional and optional arguments is 
+    that optional arguments start with - or --, while positional arguments don’t.
+    '''
 
-#parser.add_argument("post", help="executes a HTTP POST request and prints the response.", default=False)
-#store_true sends a true value when sent once!
-parser.add_argument("--HELP",help="executes a HTTP GET request and prints the response."
+    #positional arguments
+    parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
+    parser.add_argument("--port", help="Input the server port number", type=int, default=80, action="store")
+    parser.add_argument("--get", help="executes a HTTP GET request and prints the response.", type=str)
+
+    #parser.add_argument("post", help="executes a HTTP POST request and prints the response.", default=False)
+    #store_true sends a true value when sent once!
+    parser.add_argument("--HELP",help="executes a HTTP GET request and prints the response."
                          , type=str, choices=['GET', 'get', 'POST', 'post'], required=False)
-#optional arguments
-#this one below is -h for the headers key:value requirement
-'''
-3. To pass the headers value to your HTTP operation, you could use -h option. The latter means 
-setting the header of the request in the format "key: value." Notice that; you can have 
-multiple headers by having the -h option before each header parameter.
-WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!!!!
-'''
-parser.add_argument('-H', required=False)
-parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
-                    action=VerboseStore,required=False)
-#required argument in the params above "required=" can be used to force a user 
-#to add an argument, could be useful for positional argument
+    #optional arguments
+    #this one below is -h for the headers key:value requirement
+    '''
+    3. To pass the headers value to your HTTP operation, you could use -h option. The latter means 
+    setting the header of the request in the format "key: value." Notice that; you can have 
+    multiple headers by having the -h option before each header parameter.
+    WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!!!!
+    '''
+    parser.add_argument('-H', required=False)
+    parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
+                      action=VerboseStore,required=False)
+    #required argument in the params above "required=" can be used to force a user 
+    #to add an argument, could be useful for positional argument
 
-#arguments that are not necessary are called optional args and use a singular -
-#as u see above on everything i have. Positionals are everything that dont have a singular -
+    #arguments that are not necessary are called optional args and use a singular -
+    #as u see above on everything i have. Positionals are everything that dont have a singular -
 
-'''
-After you execute .parse_args(), what you get is a Namespace object that contains a simple 
-property for each input argument received from the command line.
-'''
-args = parser.parse_args()
-#print_help_for_post_or_get(args.HELP)
-run_client(args.host, args.port)
-
-# Making a GET request
-URL = 'http://httpbin.org/get?course=networking&assignment=1'
-# sending get request and saving the response as response object
-#r = requests.get(url = URL)
-# check status code for response received
-# success code - 200
-#print(r)
-  
-# print content of request
-#print(r.content)
+    '''
+    After you execute .parse_args(), what you get is a Namespace object that contains a simple 
+    property for each input argument received from the command line.
+    '''
+    URL = 'http://httpbin.org/get?course=networking&assignment=1'
+    args = parser.parse_args()
+    #print_help_for_post_or_get(args.HELP)
+    print(args.get)
+    #if(args.get != None):
+        #get_request(args.get, args.port)
 
 
-
-
-
+if(__name__=="__main__"):
+    main()
 
 
 
