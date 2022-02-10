@@ -26,6 +26,7 @@ A parameter is a particular type of argument that provides additional informatio
 '''
 import socket
 import argparse
+from typing import Text
 import requests
 import sys
 from xmlrpc.client import Boolean
@@ -48,19 +49,37 @@ class VerboseStore(argparse.Action):
         setattr(namespace, self.dest, values)
 
 
+class PayloadRequest:
+    def __init__(self, p_args, p_headers, p_url, p_data, p_files, p_form, p_json):
+        args = p_args
+        headers = p_headers
+        url = p_url
+        data = p_data
+        files = p_files
+        form = p_form
+        json = p_json
+
+    def getRequest(self, url_link : Text | bytes):
+        url = url_link
+
+
+
 def run_client(host, port):
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         conn.connect((host, port))
         print("Type 'help' to get assistance. Press ENTER and then CTRL+C to quit.")
-        while True:
-            line = input()
-            request = line.encode("utf-8")
-            conn.sendall(request)
-            # MSG_WAITALL waits for full request or error
-            response = conn.recv(1024)
-            message = response.decode("utf-8")
-            print(message)
+        #line = input()
+        #request = line.encode("utf-8")
+        #conn.sendall(request)
+        target_host = input()
+        request = "GET / HTTP/1.1\r\nHost:%s\r\n\r\n" % target_host
+        request = request.encode("utf-8")
+        conn.sendall(request)
+        # MSG_WAITALL waits for full request or error
+        response = conn.recv(1024)
+        message = response.decode("utf-8")
+        print(message)
     finally:
         conn.close()
 
@@ -104,7 +123,7 @@ that optional arguments start with - or --, while positional arguments don’t.
 
 #positional arguments
 parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
-parser.add_argument("--port", help="Input the server port number", type=int, default=8007, action="store")
+parser.add_argument("--port", help="Input the server port number", type=int, default=80, action="store")
 parser.add_argument("--get", help="executes a HTTP GET request and prints the response.", type=str)
 
 #parser.add_argument("post", help="executes a HTTP POST request and prints the response.", default=False)
@@ -134,18 +153,20 @@ property for each input argument received from the command line.
 '''
 args = parser.parse_args()
 #print_help_for_post_or_get(args.HELP)
-#run_client(args.host, args.port)
+run_client(args.host, args.port)
 
 # Making a GET request
 URL = 'http://httpbin.org/get?course=networking&assignment=1'
 # sending get request and saving the response as response object
-r = requests.get(url = URL)
+#r = requests.get(url = URL)
 # check status code for response received
 # success code - 200
-print(r)
+#print(r)
   
 # print content of request
-print(r.content)
+#print(r.content)
+
+
 
 
 
