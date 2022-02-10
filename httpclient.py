@@ -26,6 +26,7 @@ A parameter is a particular type of argument that provides additional informatio
 '''
 import socket
 import argparse
+import requests
 import sys
 from xmlrpc.client import Boolean
 
@@ -96,7 +97,11 @@ parser = argparse.ArgumentParser(prog='httpc',
                                 description='httpc is a curl-like application but supports HTTP protocol only.',
                                 usage="\n\thttpclient.py command [arguments]", allow_abbrev=False,
                                 epilog='Use "httpclient.py help [command]" for more information about a command.')
-#going to have to use -H f
+'''
+Syntactically, the difference between positional and optional arguments is 
+that optional arguments start with - or --, while positional arguments don’t.
+'''
+
 #positional arguments
 parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
 parser.add_argument("--port", help="Input the server port number", type=int, default=8007, action="store")
@@ -129,8 +134,31 @@ property for each input argument received from the command line.
 '''
 args = parser.parse_args()
 #print_help_for_post_or_get(args.HELP)
-run_client(args.host, args.port)
+#run_client(args.host, args.port)
 
+# Making a GET request
+URL = 'http://httpbin.org/get?course=networking&assignment=1'
+# sending get request and saving the response as response object
+r = requests.get(url = URL)
+# check status code for response received
+# success code - 200
+print(r)
+  
+# print content of request
+print(r.content)
+
+
+
+
+
+
+
+
+
+
+
+
+#notes for cli
 #If you wish to call a function with an option then you must create a subclass of argparse.Action
 #You must supply a__call__method.
 
