@@ -37,20 +37,20 @@ class PayloadRequest:
 
 
 def get_request(url, port, verbose=False):
-    #host is the FULL url.
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     urlparser = urlparse(url)
-    #host is 'httpbin.org', a "part" of the host variable/ full url
+    #host is 'httpbin.org', a "part" of the url variable/ full url
     host = urlparser.hostname
     #print(host)
-    # does the same as above print(urlparser.netloc)
+    # this below does the same as above
     #print(urlparser.path)
+    #prints request type i think
     #print(urlparser.query)
-    #ip address of the host vvvvvvvv
+    #ip address of the host
     #print(socket.gethostbyname(host))
     try:
-        #hostname: 'www.httpbin.org'
-        #host: http://httpbin.org/get?course=networking&assignment=1 
+        #host: 'www.httpbin.org'
+        #url: http://httpbin.org/get?course=networking&assignment=1 
         client.connect((host, port))
 
         request = "GET " + url + " HTTP/1.0\r\n" \
