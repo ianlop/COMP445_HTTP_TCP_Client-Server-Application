@@ -66,6 +66,7 @@ def get_request(url, port, verbose=False):
         if(verbose):
             print(response_details, "\n")
         print(response_data)
+
     finally:
         client.close()
 
@@ -159,6 +160,3 @@ if(__name__=="__main__"):
 #notes for cli
 #If you wish to call a function with an option then you must create a subclass of argparse.Action
 #You must supply a__call__method.
-
-#Todo 1-change verbose mutually exlusive and obser [v|d] thing from youtube video and pdf
-# 2 - pass in arguments directly to parameters 
