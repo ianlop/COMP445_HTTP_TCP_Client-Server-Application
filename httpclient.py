@@ -21,24 +21,6 @@ from typing import Text
 from xmlrpc.client import Boolean
 from urllib.parse import urlparse
 
-#verbose code we might use
-'''
-https://realpython.com/command-line-interfaces-python-argparse/
-ctrl-f VerboseStore in the link above to learn more
-this below is only a sample
-'''
-class VerboseStore(argparse.Action):
-    def __init__(self, option_strings, dest, nargs=None, **kwargs):
-        if nargs is not None:
-            raise ValueError('nargs not allowed')
-        super(VerboseStore, self).__init__(option_strings, dest, **kwargs)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        print('Here I am, setting the ' \
-              'values %r for the %r option...' % (values, option_string))
-        setattr(namespace, self.dest, values)
-
-
 class PayloadRequest:
     def __init__(self, p_args, p_headers, p_url, p_data, p_files, p_form, p_json):
         args = p_args
@@ -54,28 +36,36 @@ class PayloadRequest:
 
 
 
-def get_request(host, port):
+def get_request(url, port, verbose=False):
     #host is the FULL url.
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    urlparser = urlparse(host)
-    #host name is 'httpbin.org', a "part" of the host variable/ full url
-    hostname = urlparser.hostname
+    urlparser = urlparse(url)
+    #host is 'httpbin.org', a "part" of the host variable/ full url
+    host = urlparser.hostname
     #print(host)
-    #print(hostname)
+    # does the same as above print(urlparser.netloc)
+    #print(urlparser.path)
+    #print(urlparser.query)
+    #ip address of the host vvvvvvvv
+    #print(socket.gethostbyname(host))
     try:
         #hostname: 'www.httpbin.org'
         #host: http://httpbin.org/get?course=networking&assignment=1 
-        client.connect((hostname, port))
+        client.connect((host, port))
 
-        request = "GET " + host + " HTTP/1.0\r\n" \
-        "Host:%s\r\n\r\n" % hostname
+        request = "GET " + url + " HTTP/1.0\r\n" \
+        "Host:%s\r\n\r\n" % host
         request = request.encode("utf-8")
         
-        client.send(request)
+        client.sendall(request)
         # MSG_WAITALL waits for full request or error
         response = client.recv(1024)
-        message = response.decode("utf-8")
-        print(message)
+        full_response = response.decode("utf-8")
+        response_details, response_data = full_response.split("\r\n\r\n")
+        #show details with verbose
+        if(verbose):
+            print(response_details, "\n")
+        print(response_data)
     finally:
         client.close()
 
@@ -121,7 +111,7 @@ def main():
     #positional arguments
     parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
     parser.add_argument("--port", help="Input the server port number", type=int, default=80, action="store")
-    parser.add_argument("--get", help="executes a HTTP GET request and prints the response.", type=str)
+    parser.add_argument("--get", help="executes a HTTP GET request and prints the response. For URLs, you must surround it around double quotes.")
 
     #parser.add_argument("post", help="executes a HTTP POST request and prints the response.", default=False)
     #store_true sends a true value when sent once!
@@ -137,7 +127,7 @@ def main():
     '''
     parser.add_argument('-H', required=False)
     parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
-                      action=VerboseStore,required=False)
+                      action="store_true",required=False)
     #required argument in the params above "required=" can be used to force a user 
     #to add an argument, could be useful for positional argument
 
@@ -148,12 +138,11 @@ def main():
     After you execute .parse_args(), what you get is a Namespace object that contains a simple 
     property for each input argument received from the command line.
     '''
-    URL = 'http://httpbin.org/get?course=networking&assignment=1'
     args = parser.parse_args()
     #print_help_for_post_or_get(args.HELP)
-    print(args.get)
-    #if(args.get != None):
-        #get_request(args.get, args.port)
+    #print(args.get)
+    if(args.get != None):
+        get_request(args.get, args.port, args.verbose)
 
 
 if(__name__=="__main__"):
