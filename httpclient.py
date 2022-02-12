@@ -13,7 +13,8 @@ e.) Body of the request
 
 Task 2.)
 Implementation of a cURL command line that does basic functionalities that
-are related to the HTTP protocol
+are related to the HTTP 
+
 '''
 import socket
 import argparse
@@ -36,10 +37,10 @@ class PayloadRequest:
 
 
 
-def get_request(url, port, verbose=False):
+def get_request(url, port, verbose=False, headers = None):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     urlparser = urlparse(url)
-    #host is 'httpbin.org', a "part" of the url variable/ full url
+    #host is 'httpbin.org', a "part" of the url variable/ full url that was passed in
     host = urlparser.hostname
     #print(host)
     # this below does the same as above
@@ -54,15 +55,33 @@ def get_request(url, port, verbose=False):
         client.connect((host, port))
 
         request = "GET " + url + " HTTP/1.0\r\n" \
-        "Host:%s\r\n\r\n" % host
+        "Host:%s\r\n" % host
+        #header option examples: (THEY MUST BE SURROUNDED BY QUOTES)
+        #Accept-Language: en us,en;q=0.5
+        #Accept-Encoding: gzip,deflate
+        #Content-Type:application/json
+
+        #check if we have passed in a list of headers from our -H arg
+        if headers != None:
+            #each key:value must end with \r\n (It's essentially the delimeter for lines
+            # in a request, look at slides for chapter 2), but that is what is going on below
+            for header in headers:
+                request += header + "\r\n"
+
+        #every request that is sent to the server must end with one last additional \r\n, 
+        #that is what is happening below
+        request+= "\r\n"
+        #print(request)
         request = request.encode("utf-8")
         
         client.sendall(request)
         # MSG_WAITALL waits for full request or error
         response = client.recv(1024)
         full_response = response.decode("utf-8")
+        #split() returns a string list that is seperated by what you sent as an arg.
         response_details, response_data = full_response.split("\r\n\r\n")
-        #show details with verbose
+
+        #show details with verbose if activated
         if(verbose):
             print(response_details, "\n")
         print(response_data)
@@ -70,25 +89,17 @@ def get_request(url, port, verbose=False):
     finally:
         client.close()
 
-def handle_request(response: bytes) -> bytes:
-    line = 'default'
-    decoded = response.decode("utf-8")
-    if ('help' in decoded):
-        line = 'The commands are:\n\t get executes a HTTP GET request and prints the response.\n    post executes a HTTP POST request and prints the response.\n    help prints this screen.\n\nUse "httpc help [command]" for more information about a command'
-    response = line.encode("utf-8")
-    return response   
-
-
+#method for help text
 def print_help_for_post_or_get(argument):
     if(argument == 'get' or argument == 'GET'):
-        print('httpc help get'\
-                '\nusage: httpc get [-v] [-h key:value] URL\n' \
+        print('httpc --HELP get'\
+                '\nusage: httpc --get "URL" [-v] [-h key:value]\n' \
                 'Get executes a HTTP GET request for a given URL.\n' \
                 '-v\t\tPrints the detail of the response such as protocol, status, and headers.\n'\
                 "-h key:value\tAssociates headers to HTTP Request with the format 'key:value'.")
     elif(argument =='post' or argument=='POST'):
-        print('httpc help post'\
-                '\nusage: httpc post [-v] [-h key:value] [-d inline-data] [-f file] URL\n' \
+        print('httpc --HELP post'\
+                '\nusage: httpc --post "URL" [-v] [-h key:value] [-d inline-data] [-f file]\n' \
                 'Post executes a HTTP POST request for a given URL with inline data or from file.\n' \
                 '-v\t\tPrints the detail of the response such as protocol, status, and headers.\n'\
                 '-h key:value\t\tAssociates headers to HTTP Request with the format\n'\
@@ -98,65 +109,57 @@ def print_help_for_post_or_get(argument):
 
 
 def main():
-    #Usage: python echoclient.py --host host --port port
     #parser is container to hold our arguments
+    #for better understanding of the argparser 
+    #visit: https://realpython.com/command-line-interfaces-python-argparse/
     parser = argparse.ArgumentParser(prog='httpc',
                                     description='httpc is a curl-like application but supports HTTP protocol only.',
                                     usage="\n\thttpclient.py command [arguments]", allow_abbrev=False,
                                     epilog='Use "httpclient.py help [command]" for more information about a command.')
     '''
     Syntactically, the difference between positional and optional arguments is 
-    that optional arguments start with - or --, while positional arguments don’t.
+    that optional arguments start with - or --, while positional arguments do not.
+    We will be using optional for the most part
     '''
-
-    #positional arguments
+    #optional arguments
     parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
     parser.add_argument("--port", help="Input the server port number", type=int, default=80, action="store")
     parser.add_argument("--get", help="executes a HTTP GET request and prints the response. For URLs, you must surround it around double quotes.")
-
-    #parser.add_argument("post", help="executes a HTTP POST request and prints the response.", default=False)
+    #parser.add_argument("post", help="executes a HTTP POST request and prints the response.")
+    
     #store_true sends a true value when sent once!
-    parser.add_argument("--HELP",help="executes a HTTP GET request and prints the response."
+    parser.add_argument("--HELP",help="Display the help text for the --get and --post request as well as other options for these requests."
                          , type=str, choices=['GET', 'get', 'POST', 'post'], required=False)
-    #optional arguments
-    #this one below is -h for the headers key:value requirement
+    #more optional arguments that can go with the above, -H, _v for example
+    #this one below is -H for the headers "key:value" requirement
     '''
-    3. To pass the headers value to your HTTP operation, you could use -h option. The latter means 
+    3. To pass the headers value to your HTTP operation, you could use -H option. The latter means 
     setting the header of the request in the format "key: value." Notice that; you can have 
-    multiple headers by having the -h option before each header parameter.
+    multiple headers by having the -H option before each header parameter.
     WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!!!!
+    -h is the default argparse help option that cannot be changed.
     '''
-    parser.add_argument('-H', required=False)
+    parser.add_argument('-H', required=False, help='Associates headers to HTTP Request with the format "key:value". You must pass the headers one by one starting with -H followed up by a space then the key:value which should be surrounded by double quotes.' ,action="append")
     parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
                       action="store_true",required=False)
     #required argument in the params above "required=" can be used to force a user 
-    #to add an argument, could be useful for positional argument
-
-    #arguments that are not necessary are called optional args and use a singular -
-    #as u see above on everything i have. Positionals are everything that dont have a singular -
-
+    #to add an argument, could be useful
     '''
     After you execute .parse_args(), what you get is a Namespace object that contains a simple 
     property for each input argument received from the command line.
+    //////////////////////////////////////////////
+    Example usages in cmd prompt:
+    httpclient.py --get "http://httpbin.org/headers" -v -H "Accept-Language: en us,en;q=0.5" -H "Accept-Encoding: gzip,deflate"
+    httpclient.py --HELP get
+    //////////////////////////////////////////////
     '''
     args = parser.parse_args()
     #print_help_for_post_or_get(args.HELP)
-    #print(args.get)
     if(args.get != None):
-        get_request(args.get, args.port, args.verbose)
+        get_request(args.get, args.port, args.verbose,args.H)
+    elif(args.HELP!=None):
+        print_help_for_post_or_get(args.HELP)
 
 
 if(__name__=="__main__"):
     main()
-
-
-
-
-
-
-
-
-
-#notes for cli
-#If you wish to call a function with an option then you must create a subclass of argparse.Action
-#You must supply a__call__method.
