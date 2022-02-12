@@ -36,7 +36,7 @@ class PayloadRequest:
 
 
 
-def get_request(url, port, verbose=False):
+def get_request(url, port, verbose=False, headers = None):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     urlparser = urlparse(url)
     #host is 'httpbin.org', a "part" of the url variable/ full url
@@ -54,7 +54,16 @@ def get_request(url, port, verbose=False):
         client.connect((host, port))
 
         request = "GET " + url + " HTTP/1.0\r\n" \
-        "Host:%s\r\n\r\n" % host
+        "Host:%s\r\n" % host
+        #header option examples: (THEY MUST BE SURROUNDED BY QUOTES)
+        #Accept-Language: en us,en;q=0.5
+        #Accept-Encoding: gzip,deflate
+        #Content-Type:application/json
+        if headers != None:
+            for header in headers:
+                request += header + "\r\n"
+        request+= "\r\n"
+        print(request)
         request = request.encode("utf-8")
         
         client.sendall(request)
@@ -70,25 +79,16 @@ def get_request(url, port, verbose=False):
     finally:
         client.close()
 
-def handle_request(response: bytes) -> bytes:
-    line = 'default'
-    decoded = response.decode("utf-8")
-    if ('help' in decoded):
-        line = 'The commands are:\n\t get executes a HTTP GET request and prints the response.\n    post executes a HTTP POST request and prints the response.\n    help prints this screen.\n\nUse "httpc help [command]" for more information about a command'
-    response = line.encode("utf-8")
-    return response   
-
-
 def print_help_for_post_or_get(argument):
     if(argument == 'get' or argument == 'GET'):
-        print('httpc help get'\
-                '\nusage: httpc get [-v] [-h key:value] URL\n' \
+        print('httpc --HELP get'\
+                '\nusage: httpc --get [-v] [-h key:value] "URL"\n' \
                 'Get executes a HTTP GET request for a given URL.\n' \
                 '-v\t\tPrints the detail of the response such as protocol, status, and headers.\n'\
                 "-h key:value\tAssociates headers to HTTP Request with the format 'key:value'.")
     elif(argument =='post' or argument=='POST'):
-        print('httpc help post'\
-                '\nusage: httpc post [-v] [-h key:value] [-d inline-data] [-f file] URL\n' \
+        print('httpc --HELP post'\
+                '\nusage: httpc --post [-v] [-h key:value] [-d inline-data] [-f file] "URL"\n' \
                 'Post executes a HTTP POST request for a given URL with inline data or from file.\n' \
                 '-v\t\tPrints the detail of the response such as protocol, status, and headers.\n'\
                 '-h key:value\t\tAssociates headers to HTTP Request with the format\n'\
@@ -116,7 +116,7 @@ def main():
 
     #parser.add_argument("post", help="executes a HTTP POST request and prints the response.", default=False)
     #store_true sends a true value when sent once!
-    parser.add_argument("--HELP",help="executes a HTTP GET request and prints the response."
+    parser.add_argument("--HELP",help="Display the help text for the --get and --post request as well as other options for these requests."
                          , type=str, choices=['GET', 'get', 'POST', 'post'], required=False)
     #optional arguments
     #this one below is -h for the headers key:value requirement
@@ -126,7 +126,7 @@ def main():
     multiple headers by having the -h option before each header parameter.
     WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!!!!
     '''
-    parser.add_argument('-H', required=False)
+    parser.add_argument('-H', required=False, help="Associates headers to HTTP Request with the format 'key:value'." ,action="append")
     parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
                       action="store_true",required=False)
     #required argument in the params above "required=" can be used to force a user 
@@ -143,20 +143,10 @@ def main():
     #print_help_for_post_or_get(args.HELP)
     #print(args.get)
     if(args.get != None):
-        get_request(args.get, args.port, args.verbose)
+        get_request(args.get, args.port, args.verbose,args.H)
+    elif(args.HELP!=None):
+        print_help_for_post_or_get(args.HELP)
 
 
 if(__name__=="__main__"):
     main()
-
-
-
-
-
-
-
-
-
-#notes for cli
-#If you wish to call a function with an option then you must create a subclass of argparse.Action
-#You must supply a__call__method.
