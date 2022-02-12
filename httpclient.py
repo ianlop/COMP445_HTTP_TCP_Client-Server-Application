@@ -71,7 +71,7 @@ def get_request(url, port, verbose=False, headers = None):
         #every request that is sent to the server must end with one last additional \r\n, 
         #that is what is happening below
         request+= "\r\n"
-        #print(request)
+        #print(request,"\n")
         request = request.encode("utf-8")
         
         client.sendall(request)
@@ -149,12 +149,13 @@ def main():
     property for each input argument received from the command line.
     //////////////////////////////////////////////
     Example usages in cmd prompt:
-    httpclient.py --get "http://httpbin.org/headers" -v -H "Accept-Language: en us,en;q=0.5" -H "Accept-Encoding: gzip,deflate"
+    
+    httpclient.py --get "http://httpbin.org/headers" -v -H "Accept-Language: en us,en;q=0.5" -H "Content-Type: application/json; charset=utf-8"
+    
     httpclient.py --HELP get
     //////////////////////////////////////////////
     '''
     args = parser.parse_args()
-    #print_help_for_post_or_get(args.HELP)
     if(args.get != None):
         get_request(args.get, args.port, args.verbose,args.H)
     elif(args.HELP!=None):
