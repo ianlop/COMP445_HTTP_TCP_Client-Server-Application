@@ -60,7 +60,6 @@ def get_request(url, port, verbose=False, headers = None):
         #Accept-Language: en us,en;q=0.5
         #Accept-Encoding: gzip,deflate
         #Content-Type:application/json
-
         #check if we have passed in a list of headers from our -H arg
         if headers != None:
             #each key:value must end with \r\n (It's essentially the delimeter for lines
@@ -89,7 +88,7 @@ def get_request(url, port, verbose=False, headers = None):
     finally:
         client.close()
 
-def post_request(url, port, inline=False, headers = None):
+def post_request(url, port, verbose=False, headers = None, inline_data= None, file = None):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     urlparser = urlparse(url)
     #host is 'httpbin.org', a "part" of the url variable/ full url that was passed in
@@ -119,11 +118,18 @@ def post_request(url, port, inline=False, headers = None):
             # in a request, look at slides for chapter 2), but that is what is going on below
             for header in headers:
                 request += header + "\r\n"
-
         #every request that is sent to the server must end with one last additional \r\n, 
         #that is what is happening below
-        request+= "\r\n"
+        print(inline_data)
         #print(request,"\n")
+        data = '''
+        {
+            "data": "{\\"Assignment\\": 1}",
+        }
+        '''
+        print(data)
+        request+="data:"+ data
+        request+= "\r\n"
         request = request.encode("utf-8")
         
         client.sendall(request)
@@ -134,7 +140,7 @@ def post_request(url, port, inline=False, headers = None):
         response_details, response_data = full_response.split("\r\n\r\n")
 
         #show details with verbose if activated
-        if(inline):
+        if(verbose):
             print(response_details, "\n")
         print(response_data)
 
@@ -191,9 +197,10 @@ def main():
     WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!!!!
     -h is the default argparse help option that cannot be changed.
     '''
-    parser.add_argument('-H', "--inline", required=False, help='Associates headers to HTTP Request with the format "key:value". You must pass the headers one by one starting with -H followed up by a space then the key:value which should be surrounded by double quotes.' ,action="append")
+    parser.add_argument('-H', required=False, help='Associates headers to HTTP Request with the format "key:value". You must pass the headers one by one starting with -H followed up by a space then the key:value which should be surrounded by double quotes.' ,action="append")
     parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
                       action="store_true",required=False)
+    parser.add_argument('-d', required=False, help="Associates an inline data to the body HTTP POST request.")
     #required argument in the params above "required=" can be used to force a user 
     #to add an argument, could be useful
     '''
@@ -211,7 +218,7 @@ def main():
     if(args.get != None):
         get_request(args.get, args.port, args.verbose, args.H)
     elif(args.post != None):
-        post_request(args.post, args.port, args.inline, args.H)
+        post_request(args.post, args.port, args.verbose, args.H, args.d)
     elif(args.HELP!=None):
         print_help_for_post_or_get(args.HELP)
 
