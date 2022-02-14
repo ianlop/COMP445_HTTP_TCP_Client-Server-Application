@@ -22,33 +22,11 @@ from typing import Text
 from xmlrpc.client import Boolean
 from urllib.parse import urlparse
 
-class PayloadRequest:
-    def __init__(self, p_args, p_headers, p_url, p_data, p_files, p_form, p_json):
-        args = p_args
-        headers = p_headers
-        url = p_url
-        data = p_data
-        files = p_files
-        form = p_form
-        json = p_json
-
-    #def getRequest(self, url_link : Text | bytes):
-     #   url = url_link
-
-
-
 def get_request(url, port, verbose=False, headers = None):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     urlparser = urlparse(url)
     #host is 'httpbin.org', a "part" of the url variable/ full url that was passed in
     host = urlparser.hostname
-    #print(host)
-    # this below does the same as above
-    #print(urlparser.path)
-    #prints request type i think
-    #print(urlparser.query)
-    #ip address of the host
-    #print(socket.gethostbyname(host))
     try:
         #host: 'www.httpbin.org'
         #url: http://httpbin.org/get?course=networking&assignment=1 
@@ -56,10 +34,6 @@ def get_request(url, port, verbose=False, headers = None):
 
         request = "GET " + url + " HTTP/1.0\r\n" \
         "Host:%s\r\n" % host
-        #header option examples: (THEY MUST BE SURROUNDED BY QUOTES)
-        #Accept-Language: en us,en;q=0.5
-        #Accept-Encoding: gzip,deflate
-        #Content-Type:application/json
         #check if we have passed in a list of headers from our -H arg
         if headers != None:
             #each key:value must end with \r\n (It's essentially the delimeter for lines
@@ -70,16 +44,13 @@ def get_request(url, port, verbose=False, headers = None):
         #every request that is sent to the server must end with one last additional \r\n, 
         #that is what is happening below
         request+= "\r\n"
-        #print(request,"\n")
         request = request.encode("utf-8")
         
         client.sendall(request)
         # MSG_WAITALL waits for full request or error
         response = client.recv(1024)
         full_response = response.decode("utf-8")
-        #split() returns a string list that is seperated by what you sent as an arg.
         response_details, response_data = full_response.split("\r\n\r\n")
-
         #show details with verbose if activated
         if(verbose):
             print(response_details, "\n")
@@ -93,43 +64,30 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
     urlparser = urlparse(url)
     #host is 'httpbin.org', a "part" of the url variable/ full url that was passed in
     host = urlparser.hostname
-    #print(host)
-    # this below does the same as above
-    #print(urlparser.path)
-    #prints request type i think
-    #print(urlparser.query)
-    #ip address of the host
-    #print(socket.gethostbyname(host))
     try:
         #host: 'www.httpbin.org'
         #url: http://httpbin.org/get?course=networking&assignment=1 
         client.connect((host, port))
 
         request = "POST " + url + " HTTP/1.0\r\n" \
-        "Host:%s\r\n" % host
-        #header option examples: (THEY MUST BE SURROUNDED BY QUOTES)
-        #Accept-Language: en us,en;q=0.5
-        #Accept-Encoding: gzip,deflate
-        #Content-Type:application/json
-
+            "Host:%s\r\n" % host
+        
+        #supply content-length
+        #by default using post request you must supply a content length header
+        request+="Content-Length: 17\r\n"
         #check if we have passed in a list of headers from our -H arg
         if headers != None:
             #each key:value must end with \r\n (It's essentially the delimeter for lines
             # in a request, look at slides for chapter 2), but that is what is going on below
             for header in headers:
                 request += header + "\r\n"
-        #every request that is sent to the server must end with one last additional \r\n, 
-        #that is what is happening below
-        print(inline_data)
-        #print(request,"\n")
-        data = '''
-        {
-            "data": "{\\"Assignment\\": 1}",
-        }
-        '''
-        print(data)
-        request+="data:"+ data
+        key, value = inline_data.split(": ")
+        #must also provided double quotes around the value field like in assignment pdf
+        data = '''{"%s": %s}",'''%(key,value)
+        request += "\r\n"
+        request+=data
         request+= "\r\n"
+        #print(request)
         request = request.encode("utf-8")
         
         client.sendall(request)
@@ -141,9 +99,8 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
 
         #show details with verbose if activated
         if(verbose):
-            print(response_details, "\n")
+            print(response_details)
         print(response_data)
-
     finally:
         client.close()
 
@@ -194,7 +151,7 @@ def main():
     3. To pass the headers value to your HTTP operation, you could use -H option. The latter means 
     setting the header of the request in the format "key: value." Notice that; you can have 
     multiple headers by having the -H option before each header parameter.
-    WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!!!!
+    WE WILL USE -H TO NOT CONFLICT WITH -h the default help feature argparse uses!
     -h is the default argparse help option that cannot be changed.
     '''
     parser.add_argument('-H', required=False, help='Associates headers to HTTP Request with the format "key:value". You must pass the headers one by one starting with -H followed up by a space then the key:value which should be surrounded by double quotes.' ,action="append")
@@ -208,9 +165,13 @@ def main():
     property for each input argument received from the command line.
     //////////////////////////////////////////////
     Example usages in cmd prompt:
+    #header option examples: (THEY MUST BE SURROUNDED BY QUOTES)
+        "Accept-Language: en us,en;q=0.5"
+        "Accept-Encoding: gzip,deflate"
+        "Content-Type:application/json"
     
     httpclient.py --get "http://httpbin.org/headers" -v -H "Accept-Language: en us,en;q=0.5" -H "Content-Type: application/json; charset=utf-8"
-    
+    httpclient.py --post "http://httpbin.org/post" -v -d "Assignment: 1" -H "Content-Type: application/json"
     httpclient.py --HELP get
     //////////////////////////////////////////////
     '''
