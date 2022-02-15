@@ -81,7 +81,19 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
             # in a request, look at slides for chapter 2), but that is what is going on below
             for header in headers:
                 request += header + "\r\n"
-        key, value = inline_data.split(": ")
+        key, value = None, None
+        # check the combinations of the -d and -f cases
+        if (inline_data and not file):
+            key, value = inline_data.split(": ")
+        elif (not inline_data and file):
+            file = open("sample.txt")
+            line = file.read()
+            try:
+                key, value = line.split(": ")
+            except ValueError:
+                print("Not correct key-value pair format. Try again.")
+        else:
+            print ("Must have either one of the two valid arguments: -d or -f")
         #must also provided double quotes around the value field like in assignment pdf
         data = '''{"%s": %s}",'''%(key,value)
         request += "\r\n"
@@ -158,6 +170,7 @@ def main():
     parser.add_argument("-v", "--verbose", help="Turns on verbose mode for more details", 
                       action="store_true",required=False)
     parser.add_argument('-d', required=False, help="Associates an inline data to the body HTTP POST request.")
+    parser.add_argument('-f', required=False, help="Associate the body of the HTTP Request with the data from a given file.")
     #required argument in the params above "required=" can be used to force a user 
     #to add an argument, could be useful
     '''
@@ -172,6 +185,8 @@ def main():
     
     httpclient.py --get "http://httpbin.org/headers" -v -H "Accept-Language: en us,en;q=0.5" -H "Content-Type: application/json; charset=utf-8"
     httpclient.py --post "http://httpbin.org/post" -v -d "Assignment: 1" -H "Content-Type: application/json"
+    httpclient.py --post "http://httpbin.org/post" -v -f sample.txt -H "Content-Type: application/json"
+    httpclient.py --post "http://httpbin.org/post" -v
     httpclient.py --HELP get
     //////////////////////////////////////////////
     '''
@@ -179,8 +194,8 @@ def main():
     if(args.get != None):
         get_request(args.get, args.port, args.verbose, args.H)
     elif(args.post != None):
-        post_request(args.post, args.port, args.verbose, args.H, args.d)
-    elif(args.HELP!=None):
+        post_request(args.post, args.port, args.verbose, args.H, args.d, args.f)
+    elif(args.HELP != None):
         print_help_for_post_or_get(args.HELP)
 
 
