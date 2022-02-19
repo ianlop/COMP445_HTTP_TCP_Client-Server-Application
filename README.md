@@ -1,4 +1,4 @@
-Instructions for skeleton python scripts:
+Work by Ian Lopez & George Mavroeidis 
 ----------------------------------------------------------
 # Requirements
 1. Python 3+
