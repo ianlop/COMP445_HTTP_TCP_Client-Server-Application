@@ -16,7 +16,11 @@ Implementation of a cURL command line that does basic functionalities that
 are related to the HTTP 
 
 '''
-import socket
+import socket	#for sockets
+import sys	#for exit
+import struct
+import time
+
 import argparse
 from typing import Text
 from xmlrpc.client import Boolean
@@ -48,16 +52,22 @@ def get_request(url, port, verbose=False, headers = None):
         
         client.sendall(request)
         # MSG_WAITALL waits for full request or error
-        response = client.recv(1024)
-        full_response = response.decode("utf-8")
-        response_details, response_data = full_response.split("\r\n\r\n")
+        #og is response = client.recv(1024)
+        response = recv_timeout(client)
+        response_details, response_data = response.split("\r\n\r\n")
         #show details with verbose if activated
         if(verbose):
             print(response_details, "\n")
         print(response_data)
-
+    except socket.error:
+        #Send failed
+        print('Send failed')
+        sys.exit()
+    except ValueError:
+        print(response)
     finally:
         client.close()
+    
 
 def post_request(url, port, verbose=False, headers = None, inline_data= None, file = None):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -101,20 +111,55 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
         request+= "\r\n"
         #print(request)
         request = request.encode("utf-8")
-        
         client.sendall(request)
-        # MSG_WAITALL waits for full request or error
+
         response = client.recv(1024)
         full_response = response.decode("utf-8")
         #split() returns a string list that is seperated by what you sent as an arg.
         response_details, response_data = full_response.split("\r\n\r\n")
-
         #show details with verbose if activated
         if(verbose):
-            print(response_details)
+            print(response_details, "\n")
         print(response_data)
+
     finally:
         client.close()
+
+def recv_timeout(the_socket,timeout=2):
+    #make socket non blocking
+    the_socket.setblocking(0)
+    
+    #total data partwise in an array
+    total_data=[]
+    data=''
+    
+    #beginning time
+    begin=time.time()
+    while 1:
+        #if you got some data, then break after timeout
+        if total_data and time.time()-begin > timeout:
+            break
+        
+        #if you got no data at all, wait a little longer, twice the timeout
+        elif time.time()-begin > timeout*2:
+            break
+        
+        #recv something
+        try:
+            data = the_socket.recv(8192)
+            if data:
+                response = data.decode("utf-8")
+                total_data.append(response)
+                #change the beginning time for measurement
+                begin = time.time()
+            else:
+                #sleep for sometime to indicate a gap
+                time.sleep(0.1)
+        except:
+            pass
+    
+    #join all parts to make final string
+    return ''.join(total_data)
 
 #method for help text
 def print_help_for_post_or_get(argument):
@@ -133,7 +178,6 @@ def print_help_for_post_or_get(argument):
                 '-d string\t\tAssociates headers to HTTP Request with the format\n'\
                 '-f file\t\tAssociates the content of a file to the body HTTP POST request.\n'\
                 "Either [-d] or [-f] can be used but not both.")
-
 
 def main():
     #parser is container to hold our arguments
@@ -188,6 +232,10 @@ def main():
     httpclient.py --post "http://httpbin.org/post" -v -f sample.txt -H "Content-Type: application/json"
     httpclient.py --post "http://httpbin.org/post" -v
     httpclient.py --HELP get
+
+    local server communication:
+    httpclient.py --port 1234 --get "http://localhost:1234/foo"
+
     //////////////////////////////////////////////
     '''
     args = parser.parse_args()
@@ -197,7 +245,6 @@ def main():
         post_request(args.post, args.port, args.verbose, args.H, args.d, args.f)
     elif(args.HELP != None):
         print_help_for_post_or_get(args.HELP)
-
 
 if(__name__=="__main__"):
     main()

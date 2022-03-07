@@ -1,15 +1,43 @@
+'''
+Ian L.
+George M.
+
+Task 1.)
+Develop an HTTP Server Library
+We are required to implement only a subset of the HTTP specifications. In essence, the
+library should include the features that can handle the requests from the httpc app of
+Assignment #1.
+
+Task 2.)
+Build a File Server Application Using Your HTTP Library.
+'''
 import socket
 import threading
 import argparse
+import os
 
-def run_server(host, port):
+global directory
+
+def run_server(host, port, dir=None):
+    global directory
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if(dir == None):
+        #use current directory as default
+        directory = os.getcwd()
+        #print(directory)
+    else:
+        #use specified directory
+        directory = dir
+
     try:
         listener.bind((host, port))
+        #5 is the number of connections that socket.listen() will put in queue at most
+        #before rejecting the rest of the incoming connections
         listener.listen(5)
         print('Echo server is listening at', port)
         while True:
             conn, addr = listener.accept()
+            #run thread with every client with start()
             threading.Thread(target=handle_client, args=(conn, addr)).start()
     finally:
         listener.close()
@@ -19,13 +47,13 @@ def handle_client(conn, addr):
     print('New client from', addr)
     try:
         while True:
-            data = conn.recv(1024)
+            data = conn.recv(8192)
             data = data.decode("utf-8")
             print(type(data))
+            print(data+"\n")
             if not data:
                 break
-            if data == 'help':
-                data = 'I dont care'
+            data = 'message from httpfserver.py! testing 1..2..3'
             data = data.encode("utf-8")
             conn.sendall(data)
     finally:
@@ -54,22 +82,12 @@ def main():
     property for each input argument received from the command line.
     //////////////////////////////////////////////
     Example usages in cmd prompt:
-    #header option examples: (THEY MUST BE SURROUNDED BY QUOTES)
-        "Accept-Language: en us,en;q=0.5"
-        "Accept-Encoding: gzip,deflate"
-        "Content-Type:application/json"
-    
-    httpclient.py --get "http://httpbin.org/headers" -v -H "Accept-Language: en us,en;q=0.5" -H "Content-Type: application/json; charset=utf-8"
-    httpclient.py --post "http://httpbin.org/post" -v -d "Assignment: 1" -H "Content-Type: application/json"
-    httpclient.py --post "http://httpbin.org/post" -v -f sample.txt -H "Content-Type: application/json"
-    httpclient.py --post "http://httpbin.org/post" -v
-    httpclient.py --HELP get
+
+    httpfserver.py --port 1234
     //////////////////////////////////////////////
     '''
-
     args = parser.parse_args()
-    run_server(args.host,args.port)
-
+    run_server(args.host,args.port, args.d)
 
 if(__name__=="__main__"):
     main()
