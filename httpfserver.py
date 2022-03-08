@@ -17,6 +17,7 @@ import argparse
 import os
 
 global directory
+global port_number
 
 def run_server(host, port, dir=None):
     global directory
@@ -49,13 +50,53 @@ def handle_client(conn, addr):
         while True:
             data = conn.recv(8192)
             data = data.decode("utf-8")
-            print(type(data))
-            print(data+"\n")
             if not data:
                 break
-            data = 'message from httpfserver.py! testing 1..2..3'
-            data = data.encode("utf-8")
-            conn.sendall(data)
+            else:
+                print("the server has received: \n"+data+"\n")
+                client_request = data.split(" ")
+                #The code above will split the client's message like so (in to an array):
+                #['GET', 'http://localhost/foo', 'HTTP/1.0\r\nHost:localhost\r\n\r\n']
+                print(client_request)
+                request_type = client_request[0]
+                request = client_request[1]
+                
+                if(request_type == "GET"):
+                    print("I have received a GET Request")
+                    split_request = request.split("localhost")
+                    #the above will look like this: '[http://, /]'
+                    requested_file = split_request[1]
+                    if(len(requested_file) == 1 and requested_file.endswith("/")):
+                        print("return the directory files found")
+                        #use George's code
+                        #return dir()
+                    else:
+                        #when we are here this means that we are looking for a file
+                        print("looking for: ",requested_file)
+                        forbidden_chars = ".."
+                        if(len(requested_file) == 0):
+                            data = "404: Bad request Page not found!\n"
+                            data = data.encode("utf-8")
+                            conn.sendall(data)
+                        elif(len(requested_file) > 2 ):
+                            split_request = requested_file.split("/")
+                            #split_request needs to look exactly like this [/, fileName]
+                            #max indices is 2
+                            if(len(split_request) > 2 or forbidden_chars in requested_file):
+                                data = "403: Forbidden\n"
+                                data = data.encode("utf-8")
+                                conn.sendall(data)
+                            elif(len(split_request) == 2):
+                                file = split_request[1]
+                                print("requested file name: ", file)
+                                data = "Ahhh so you want %s? Well too fucken bad, that's not implemented yet\n"%file
+                                #data is really the contents of george's method
+                                #data = gerogeMethod(file)
+                                data = data.encode("utf-8")
+                                conn.sendall(data)
+                        
+                elif(request_type=="POST"):
+                    print("I have received a POST request")
     finally:
         conn.close()
 

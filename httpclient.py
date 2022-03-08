@@ -18,7 +18,6 @@ are related to the HTTP
 '''
 import socket	#for sockets
 import sys	#for exit
-import struct
 import time
 
 import argparse
@@ -234,7 +233,7 @@ def main():
     httpclient.py --HELP get
 
     local server communication:
-    httpclient.py --port 1234 --get "http://localhost:1234/foo"
+    httpclient.py --port 1234 --get "http://localhost/foo"
 
     //////////////////////////////////////////////
     '''
