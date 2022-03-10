@@ -233,7 +233,7 @@ def main():
     httpclient.py --HELP get
 
     local server communication:
-    httpclient.py --port 1234 --get "http://localhost/foo"
+    httpclient.py --port 1234 --get "http://localhost/foo3"
 
     //////////////////////////////////////////////
     '''

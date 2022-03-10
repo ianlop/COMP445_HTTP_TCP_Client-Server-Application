@@ -11,6 +11,7 @@ Assignment #1.
 Task 2.)
 Build a File Server Application Using Your HTTP Library.
 '''
+from fileinput import filename
 import socket
 import threading
 import argparse
@@ -19,13 +20,44 @@ import os
 global directory
 global port_number
 
+
+def get_directory():
+    path = directory
+    max_character_name = 12
+    dir_content = os.listdir(path)
+    content = ''
+    for item in dir_content:
+        if os.path.isdir(os.path.join(path, item)):
+            content += 'DIR: %s\r\n'%(item)
+        elif os.path.isfile(os.path.join(path, item)):
+            split_text = item.split('.')
+            split_text[0] = split_text[0].ljust(max_character_name)
+            content += 'FILE: %s TYPE: %s\r\n'%(split_text[0], split_text[1])
+    return content
+
+def get_file_content(fileName: str):
+    path = directory
+    filePath = ''
+    print(path)
+    for files in os.walk(path):
+        if fileName in files:
+            print("FILE IS: " + str(fileName))
+            filePath = os.path.join(path, fileName)
+            break
+
+    file = open(filePath, 'r')
+    fileContent = ''
+    with file:
+        fileContent = file.read()
+        
+    return fileContent
+
 def run_server(host, port, dir=None):
     global directory
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if(dir == None):
         #use current directory as default
-        directory = os.getcwd()
-        #print(directory)
+        directory = os.getcwd() + "\Working"
     else:
         #use specified directory
         directory = dir
@@ -68,8 +100,9 @@ def handle_client(conn, addr):
                     requested_file = split_request[1]
                     if(len(requested_file) == 1 and requested_file.endswith("/")):
                         print("return the directory files found")
-                        #use George's code
-                        #return dir()
+                        data = get_directory()
+                        data = data.encode("utf-8")
+                        conn.sendall(data)
                     else:
                         #when we are here this means that we are looking for a file
                         print("looking for: ",requested_file)
@@ -89,9 +122,7 @@ def handle_client(conn, addr):
                             elif(len(split_request) == 2):
                                 file = split_request[1]
                                 print("requested file name: ", file)
-                                data = "Ahhh so you want %s? Well too fucken bad, that's not implemented yet\n"%file
-                                #data is really the contents of george's method
-                                #data = gerogeMethod(file)
+                                data = get_file_content(split_request)
                                 data = data.encode("utf-8")
                                 conn.sendall(data)
                         
