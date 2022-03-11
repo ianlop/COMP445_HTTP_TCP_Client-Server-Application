@@ -11,6 +11,7 @@ Assignment #1.
 Task 2.)
 Build a File Server Application Using Your HTTP Library.
 '''
+from asyncio.windows_events import NULL
 from fileinput import filename
 import socket
 import threading
@@ -38,18 +39,16 @@ def get_directory():
 def get_file_content(fileName: str):
     path = directory
     filePath = ''
-    print(path)
-    for files in os.walk(path):
-        if fileName in files:
-            print("FILE IS: " + str(fileName))
-            filePath = os.path.join(path, fileName)
-            break
-
-    file = open(filePath, 'r')
     fileContent = ''
-    with file:
-        fileContent = file.read()
-        
+    for (dirpath, subDirs, files) in os.walk(path):
+        for file in files:
+            if fileName == file:
+                filePath = os.path.join(dirpath, fileName)
+
+                fileResult = open(filePath, 'r')
+                fileContent = fileResult.read()
+                break
+
     return fileContent
 
 def run_server(host, port, dir=None):
@@ -121,8 +120,8 @@ def handle_client(conn, addr):
                                 conn.sendall(data)
                             elif(len(split_request) == 2):
                                 file = split_request[1]
-                                print("requested file name: ", file)
-                                data = get_file_content(split_request)
+                                print("requested file name:", file)
+                                data = get_file_content(file)
                                 data = data.encode("utf-8")
                                 conn.sendall(data)
                         
