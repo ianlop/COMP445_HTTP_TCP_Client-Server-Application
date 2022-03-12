@@ -73,6 +73,7 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
     urlparser = urlparse(url)
     #host is 'httpbin.org', a "part" of the url variable/ full url that was passed in
     host = urlparser.hostname
+    data = None
     try:
         #host: 'www.httpbin.org'
         #url: http://httpbin.org/get?course=networking&assignment=1 
@@ -93,7 +94,10 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
         key, value = None, None
         # check the combinations of the -d and -f cases
         if (inline_data and not file):
-            key, value = inline_data.split(": ")
+            if(": " in inline_data):
+                key, value = inline_data.split(": ")
+            else:
+                data = inline_data
         elif (not inline_data and file):
             file = open("sample.txt")
             line = file.read()
@@ -104,7 +108,8 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
         else:
             print ("Must have either one of the two valid arguments: -d or -f")
         #must also provided double quotes around the value field like in assignment pdf
-        data = '''{"%s": %s}",'''%(key,value)
+        if(data != inline_data):
+            data = '''{"%s": %s}",'''%(key,value)
         request += "\r\n"
         request+=data
         request+= "\r\n"
@@ -120,7 +125,8 @@ def post_request(url, port, verbose=False, headers = None, inline_data= None, fi
         if(verbose):
             print(response_details, "\n")
         print(response_data)
-
+    except ValueError:
+        print(full_response)
     finally:
         client.close()
 
@@ -234,9 +240,13 @@ def main():
 
     local server communication:
     httpclient.py --port 1234 --get "http://localhost/foo3"
-
+    httpclient.py --port 1234 --post "http://localhost/bar" -d "Test text"
+    httpclient.py --port 1234 --post "http://localhost/bar.html" -d "<h>Hello World!</h>"
+    if we want to use 'key: value' pairing:
+        httpclient.py --port 1234 --post "http://localhost/bar" -d "Assignment: 1"
     //////////////////////////////////////////////
     '''
+
     args = parser.parse_args()
     if(args.get != None):
         get_request(args.get, args.port, args.verbose, args.H)

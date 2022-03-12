@@ -13,6 +13,7 @@ Build a File Server Application Using Your HTTP Library.
 '''
 from asyncio.windows_events import NULL
 from fileinput import filename
+from genericpath import exists
 import socket
 import threading
 import argparse
@@ -32,7 +33,9 @@ def get_directory():
             content += 'DIR: %s\r\n'%(item)
         elif os.path.isfile(os.path.join(path, item)):
             split_text = item.split('.')
+            print(split_text)
             split_text[0] = split_text[0].ljust(max_character_name)
+            print(split_text[0])
             content += 'FILE: %s TYPE: %s\r\n'%(split_text[0], split_text[1])
 
     if not content:
@@ -42,6 +45,7 @@ def get_directory():
 
 def get_file_content(fileName: str):
     path = directory
+    print(path)
     filePath = ''
     fileContent = ''
     for (dirpath, subDirs, files) in os.walk(path):
@@ -55,12 +59,24 @@ def get_file_content(fileName: str):
                     break
                 except OSError:
                     fileContent = 'HTTP ERROR 400: Could not open/read file. Try another one.'
-                    break;
+                    break
 
     if not fileContent:
         fileContent = "HTTP ERROR 404: File could not be found."
 
     return fileContent
+
+def create_overwrite(fileName: str, data: str):
+    if(exists(fileName)):
+        with open(fileName, "w") as f:
+            f.write(data)
+            f.close()
+        print("File %s, has been overwritten!"%fileName)
+    else:
+        file = open(fileName, "w")
+        file.write(data)
+        file.close()
+        print("File %s has been created and the user has sucessfully written on it!"%fileName)
 
 def run_server(host, port, dir=None):
     global directory
@@ -68,10 +84,11 @@ def run_server(host, port, dir=None):
     if(dir == None):
         #use current directory as default
         directory = os.getcwd() + "\Working"
+        os.chdir(directory)
     else:
         #use specified directory
         directory = dir
-
+        os.chdir(dir)
     try:
         listener.bind((host, port))
         #5 is the number of connections that socket.listen() will put in queue at most
@@ -90,13 +107,13 @@ def handle_client(conn, addr):
     print('New client from', addr)
     try:
         while True:
-            data = conn.recv(8192)
-            data = data.decode("utf-8")
-            if not data:
+            data_from_client = conn.recv(8192)
+            data_from_client = data_from_client.decode("utf-8")
+            if not data_from_client:
                 break
             else:
-                print("the server has received: \n"+data+"\n")
-                client_request = data.split(" ")
+                print("the server has received: \n"+data_from_client+"\n")
+                client_request = data_from_client.split(" ")
                 #The code above will split the client's message like so (in to an array):
                 #['GET', 'http://localhost/foo', 'HTTP/1.0\r\nHost:localhost\r\n\r\n']
                 print(client_request)
@@ -135,9 +152,49 @@ def handle_client(conn, addr):
                                 data = get_file_content(file)
                                 data = data.encode("utf-8")
                                 conn.sendall(data)
-                        
+
                 elif(request_type=="POST"):
                     print("I have received a POST request")
+                    split_request = request.split("localhost")
+                    #the above will look like this: '[http://, /]'
+                    requested_file = split_request[1]
+                    if(len(requested_file) == 1 and requested_file.endswith("/")):
+                        data = "No file provided, please provide one at the end of the URL like so: /bar.txt"
+                        data = data.encode("utf-8")
+                        conn.sendall(data)
+                    else:
+                        #when we are here this means that we are looking for a file
+                        print("looking for: ",requested_file, " to overwrite or create")
+                        forbidden_chars = ".."
+                        if(len(requested_file) == 0):
+                            data = "404: Bad request Page not found!\n"
+                            data = data.encode("utf-8")
+                            conn.sendall(data)
+                        elif(len(requested_file) > 2 ):
+                            split_request = requested_file.split("/")
+                            #split_request needs to look exactly like this [/, fileName]
+                            #max indices is 2
+                            if(len(split_request) > 2 or forbidden_chars in requested_file):
+                                data = "403: Forbidden\n"
+                                data = data.encode("utf-8")
+                                conn.sendall(data)
+                            elif(len(split_request) == 2):
+                                file = split_request[1]
+                                #print(split_request.split("\r\n\r\n"))
+                                if('.' not in file):
+                                    data = "please include a file extenstion to your request. Like '.txt' for example."
+                                    data = data.encode("utf-8")
+                                    conn.sendall(data)
+                                else:
+                                    print("requested file name:", file)
+                                    split_request = data_from_client.split("\r\n\r\n")
+                                    data_to_write = split_request[len(split_request) - 1]
+                                    split_request = data_to_write.split("\r\n")
+                                    data_to_write = split_request[0]                                
+                                    create_overwrite(file, data_to_write)
+                                    data = "The necessary actions have been taken accordingly for: %s"%file
+                                    data = data.encode("utf-8")
+                                    conn.sendall(data)
     finally:
         conn.close()
 
@@ -159,15 +216,6 @@ def main():
     parser.add_argument('-d', required=False, help="Specifies the directory that the server will use to read/write requested files. Default is the current directory when launching the application.")
     #required argument in the params above "required=" can be used to force a user 
     #to add an argument, could be useful
-    '''
-    After you execute .parse_args(), what you get is a Namespace object that contains a simple 
-    property for each input argument received from the command line.
-    //////////////////////////////////////////////
-    Example usages in cmd prompt:
-
-    httpfserver.py --port 1234
-    //////////////////////////////////////////////
-    '''
     args = parser.parse_args()
     run_server(args.host,args.port, args.d)
 
