@@ -218,6 +218,7 @@ def main():
     #to add an argument, could be useful
     args = parser.parse_args()
     run_server(args.host,args.port, args.d)
+    # httpfserver.py -d "E:\unity"
 
 if(__name__=="__main__"):
     main()
