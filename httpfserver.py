@@ -216,8 +216,16 @@ def main():
     parser.add_argument('-d', required=False, help="Specifies the directory that the server will use to read/write requested files. Default is the current directory when launching the application.")
     #required argument in the params above "required=" can be used to force a user 
     #to add an argument, could be useful
+    '''
+    After you execute .parse_args(), what you get is a Namespace object that contains a simple 
+    property for each input argument received from the command line.
+    //////////////////////////////////////////////
+    Example usages in cmd prompt:
+
+    httpfserver.py --port 1234 -d "E:\unity"
+    //////////////////////////////////////////////
     args = parser.parse_args()
     run_server(args.host,args.port, args.d)
-
+    '''
 if(__name__=="__main__"):
     main()
