@@ -34,6 +34,10 @@ def get_directory():
             split_text = item.split('.')
             split_text[0] = split_text[0].ljust(max_character_name)
             content += 'FILE: %s TYPE: %s\r\n'%(split_text[0], split_text[1])
+
+    if not content:
+        content = "HTTP ERROR 404: No files or directories found."
+
     return content
 
 def get_file_content(fileName: str):
@@ -43,11 +47,18 @@ def get_file_content(fileName: str):
     for (dirpath, subDirs, files) in os.walk(path):
         for file in files:
             if fileName == file:
-                filePath = os.path.join(dirpath, fileName)
+                try:
+                    filePath = os.path.join(dirpath, fileName)
 
-                fileResult = open(filePath, 'r')
-                fileContent = fileResult.read()
-                break
+                    fileResult = open(filePath, 'r')
+                    fileContent = fileResult.read()
+                    break
+                except OSError:
+                    fileContent = 'HTTP ERROR 400: Could not open/read file. Try another one.'
+                    break;
+
+    if not fileContent:
+        fileContent = "HTTP ERROR 404: File could not be found."
 
     return fileContent
 
