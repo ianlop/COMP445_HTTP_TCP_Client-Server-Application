@@ -72,17 +72,16 @@ def create_overwrite(fileName, data, dirs =None):
             with open(fileName, "w") as f:
                 f.write(data)
                 f.close()
-            print("File %s, has been overwritten!"%fileName)
+            return "File %s, has been overwritten!"%fileName
         else:
             file = open(fileName, "w")
             file.write(data)
             file.close()
-            print("File %s has been created and the user has sucessfully written on it!"%fileName)
+            return "File %s has been created and the user has sucessfully written on it!"%fileName
     else:
-        print("Path DNE")
-        #probably shuld let user know
+        return "HTTP ERROR 404: Path could not be found."
 
-def run_server(host, port, dir=None):
+def run_server(host, port, dir=None, debugger = False):
     global base_directory
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if(dir == None):
@@ -98,17 +97,19 @@ def run_server(host, port, dir=None):
         #5 is the number of connections that socket.listen() will put in queue at most
         #before rejecting the rest of the incoming connections
         listener.listen(5)
-        print('Echo server is listening at', port)
+        if(debugger):
+            print('Echo server is listening at', port)
         while True:
             conn, addr = listener.accept()
             #run thread with every client with start()
-            threading.Thread(target=handle_client, args=(conn, addr)).start()
+            threading.Thread(target=handle_client, args=(conn, addr, debugger)).start()
     finally:
         listener.close()
 
 
-def handle_client(conn, addr):
-    print('New client from', addr)
+def handle_client(conn, addr, debugger):
+    if(debugger):
+        print('New client from', addr)
     try:
         while True:
             data_from_client = conn.recv(8192)
@@ -116,27 +117,30 @@ def handle_client(conn, addr):
             if not data_from_client:
                 break
             else:
-                print("the server has received: \n"+data_from_client+"\n")
+                if(debugger):
+                    print("the server has received this message from the client: \n"+data_from_client+"\n")
                 client_request = data_from_client.split(" ")
                 #The code above will split the client's message like so (in to an array):
                 #['GET', 'http://localhost/foo', 'HTTP/1.0\r\nHost:localhost\r\n\r\n']
-                print(client_request)
                 request_type = client_request[0]
                 request = client_request[1]
                 
                 if(request_type == "GET"):
-                    print("I have received a GET Request")
+                    if(debugger):
+                        print("I have received a GET Request\n")
                     split_request = request.split("localhost")
                     #the above will look like this: '[http://, /]'
                     requested_file = split_request[1]
                     if(len(requested_file) == 1 and requested_file.endswith("/")):
-                        print("return the directory files found")
+                        if(debugger):
+                            print("returning the directory files found\n")
                         data = get_directory()
                         data = data.encode("utf-8")
                         conn.sendall(data)
                     else:
                         #when we are here this means that we are looking for a file
-                        print("looking for: ",requested_file)
+                        if(debugger):
+                            print("looking for: ",requested_file)
                         forbidden_chars = ".."
                         if(len(requested_file) == 0):
                             data = "404: Bad request Page not found!\n"
@@ -144,39 +148,33 @@ def handle_client(conn, addr):
                             conn.sendall(data)
                         elif(len(requested_file) > 2 ):
                             split_request = requested_file.split("/")
-                            print(split_request)
-                            
                             counter = 1
                             directories = ''
                             while(counter < len(split_request)-1):
                                 directories += "\\" + split_request[counter]
                                 counter += 1
 
-                            print(directories)
                             file = split_request[len(split_request) - 1]
                             if('.' not in file):
                                     data = "please include a file extenstion to your request. Like '.txt' for example."
                                     data = data.encode("utf-8")
                                     conn.sendall(data)
-                            else:
-                                print(file)
-                                
+                            else:   
                                 if(forbidden_chars in directories or forbidden_chars in file):
                                     data = "403: Forbidden\n"
                                     data = data.encode("utf-8")
                                     conn.sendall(data)
                                 else:
                                     #GEORGE
-                                    #The comment below should replace the old stuff we had (line 172)
+                                    #The comment below should replace the old stuff we had (line 171)
                                     #data = get_file_content(directories, file) 
                                     data = get_file_content(file)
                                     data = data.encode("utf-8")
                                     conn.sendall(data)
-
                 elif(request_type=="POST"):
-                    print("I have received a POST request")
+                    if(debugger):
+                        print("I have received a POST request\n")
                     split_request = request.split("localhost")
-                    #the above will look like this: '[http://, /]'
                     requested_file = split_request[1]
                     if(len(requested_file) == 1 and requested_file.endswith("/")):
                         data = "No file provided, please provide one at the end of the URL like so: /bar.txt"
@@ -184,7 +182,8 @@ def handle_client(conn, addr):
                         conn.sendall(data)
                     else:
                         #when we are here this means that we are looking for a file
-                        print("looking for: ",requested_file, " to overwrite or create")
+                        if(debugger):
+                            print("looking for: ",requested_file, " to overwrite or create\n")
                         forbidden_chars = ".."
                         if(len(requested_file) == 0):
                             data = "404: Bad request Page not found!\n"
@@ -199,16 +198,13 @@ def handle_client(conn, addr):
                                 data = data.encode("utf-8")
                                 conn.sendall(data)
                             else:
-                                print(split_request)
                                 counter = 1
                                 directories = ''
                                 while(counter < len(split_request)-1):
                                     directories += "\\" + split_request[counter]
                                     counter += 1
 
-                                print(directories)
                                 file = split_request[len(split_request) - 1]
-                                print(file)
                                 if('.' not in file):
                                     data = "please include a file extenstion to your request. Like '.txt' for example."
                                     data = data.encode("utf-8")
@@ -216,11 +212,11 @@ def handle_client(conn, addr):
                                 else:
                                     split_request = data_from_client.split("\r\n\r\n")
                                     data_to_write = split_request[len(split_request) - 1]
-
                                     split_request = data_to_write.split("\r\n")
+                                    #data from user that they want to write the file with
                                     data_to_write = split_request[0]
-                                    create_overwrite(file, data_to_write, directories)
-                                    data = "The necessary actions have been taken accordingly for: %s"%file
+                                    
+                                    data = create_overwrite(file, data_to_write, directories)
                                     data = data.encode("utf-8")
                                     conn.sendall(data) 
     finally:
@@ -239,13 +235,13 @@ def main():
     '''
     #optional arguments
     parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
-    parser.add_argument("--port", help="Input the server port number", type=int, default=1274, action="store")    
-    parser.add_argument('-v', required=False, help="Prints debugging messages.")
+    parser.add_argument("--port", help="Input the server port number", type=int, default=1234, action="store")    
+    parser.add_argument('-v', required=False, help="Prints debugging messages.",action="store_true")
     parser.add_argument('-d', required=False, help="Specifies the directory that the server will use to read/write requested files. Default is the current directory when launching the application.")
     #required argument in the params above "required=" can be used to force a user 
     #to add an argument, could be useful
     args = parser.parse_args()
-    run_server(args.host,args.port, args.d)
+    run_server(args.host,args.port, args.d, args.v)
     # httpfserver.py -d "E:\unity"
 
 if(__name__=="__main__"):

@@ -239,9 +239,9 @@ def main():
     httpclient.py --HELP get
 
     local server communication:
-    httpclient.py --port 1274 --get "http://localhost/Directory3/foo3.txt"
+    httpclient.py --port 1234 --get "http://localhost/Directory3/foo3.txt"
     httpclient.py --port 1234 --post "http://localhost/bar" -d "Test text"
-    httpclient.py --port 1274 --post "http://localhost/Directory3/bar.html" -d "<h>Hello World!</h>"
+    httpclient.py --port 1234 --post "http://localhost/Directory3/bar.html" -d "<h>Hello World!</h>"
     if we want to use 'key: value' pairing:
         httpclient.py --port 1234 --post "http://localhost/bar" -d "Assignment: 1"
     //////////////////////////////////////////////
