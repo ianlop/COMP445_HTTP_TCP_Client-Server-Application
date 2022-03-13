@@ -1,1 +1,3 @@
-this is foo2
+{
+    This is foo 2.
+}

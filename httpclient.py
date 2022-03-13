@@ -239,11 +239,25 @@ def main():
     httpclient.py --HELP get
 
     local server communication:
-    httpclient.py --port 1234 --get "http://localhost/Directory3/foo3.txt"
+
+    GET /
+    httpclient.py --port 1234 --get "http://localhost/"
+    httpclient.py --port 1234 --get "http://localhost/Directory3/"
+    httpclient.py --port 1234 --get "http://localhost/Directory1/"
+    httpclient.py --port 1234 --get "http://localhost/Directory4/"
+
+    GET /filename.type
+    httpclient.py --port 1234 --get "http://localhost/bar.txt"
+    httpclient.py --port 1234 --get "http://localhost/Directory3/bar.txt"
+    httpclient.py --port 1234 --get "http://localhost/Directory3/foo_2.txt"
+    httpclient.py --port 1234 --get "http://localhost/foo3.txt"
+    httpclient.py --port 1234 --get "http://localhost/empty.txt"
+    httpclient.py --port 1234 --get "http://localhost/bar"
+
     httpclient.py --port 1234 --post "http://localhost/bar" -d "Test text"
     httpclient.py --port 1234 --post "http://localhost/Directory3/bar.html" -d "<h>Hello World!</h>"
     if we want to use 'key: value' pairing:
-        httpclient.py --port 1234 --post "http://localhost/bar" -d "Assignment: 1"
+        httpclient.py --port 1234 --post "http://localhost/bar.txt" -d "Assignment: 1"
     //////////////////////////////////////////////
     '''
 
