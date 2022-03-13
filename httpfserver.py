@@ -23,11 +23,17 @@ from typing import final
 global base_directory
 global port_number
 
-def get_directory():
-    path = base_directory
+def get_directory(dirs = None):
+    path = base_directory + dirs
     max_character_name = 12
-    dir_content = os.listdir(path)
     content = ''
+
+    try:
+        dir_content = os.listdir(path)
+    except FileNotFoundError:
+        content = "HTTP ERROR 404: Directory does not exist."
+        return content
+
     for item in dir_content:
         if os.path.isdir(os.path.join(path, item)):
             content += 'DIR: %s\r\n'%(item)
@@ -38,8 +44,8 @@ def get_directory():
             print(split_text[0])
             content += 'FILE: %s TYPE: %s\r\n'%(split_text[0], split_text[1])
 
-    if not content:
-        content = "HTTP ERROR 404: No files or directories found."
+    if not content.strip():
+        content = "WARNING: Directory is empty."
 
     return content
 
@@ -57,9 +63,9 @@ def get_file_content(fileName: str, dirs = None):
             if not fileContent:
                 fileContent= 'WARNING: File has no content.'
         except OSError:
-            fileContent = 'HTTP ERROR 400: Could not open/read file. Try another one.'
+            fileContent = 'HTTP ERROR 400: Could not open/read specified file.'
     else:
-        fileContent = "HTTP ERROR 404: File could not be found."
+        fileContent = "HTTP ERROR 404: File could not be found in specified directory."
 
     return fileContent
 
@@ -129,10 +135,10 @@ def handle_client(conn, addr, debugger):
                     split_request = request.split("localhost")
                     #the above will look like this: '[http://, /]'
                     requested_file = split_request[1]
-                    if(len(requested_file) == 1 and requested_file.endswith("/")):
+                    if(requested_file.endswith("/")):
                         if(debugger):
                             print("returning the directory files found\n")
-                        data = get_directory()
+                        data = get_directory(requested_file)
                         data = data.encode("utf-8")
                         conn.sendall(data)
                     else:
