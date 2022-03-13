@@ -156,7 +156,7 @@ def handle_client(conn, addr, debugger):
 
                             file = split_request[len(split_request) - 1]
                             if('.' not in file):
-                                    data = "please include a file extenstion to your request. Like '.txt' for example."
+                                    data = "HTTP ERROR 404: Please include a file extenstion to your request. Like '.txt' for example."
                                     data = data.encode("utf-8")
                                     conn.sendall(data)
                             else:   
