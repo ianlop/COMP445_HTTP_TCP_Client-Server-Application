@@ -19,12 +19,11 @@ import threading
 import argparse
 import os
 
-global directory
+global base_directory
 global port_number
 
-
 def get_directory():
-    path = directory
+    path = base_directory
     max_character_name = 12
     dir_content = os.listdir(path)
     content = ''
@@ -44,7 +43,7 @@ def get_directory():
     return content
 
 def get_file_content(fileName: str):
-    path = directory
+    path = base_directory
     print(path)
     filePath = ''
     fileContent = ''
@@ -66,29 +65,34 @@ def get_file_content(fileName: str):
 
     return fileContent
 
-def create_overwrite(fileName: str, data: str):
-    if(exists(fileName)):
-        with open(fileName, "w") as f:
-            f.write(data)
-            f.close()
-        print("File %s, has been overwritten!"%fileName)
+def create_overwrite(fileName, data, dirs =None):
+    if(dirs != None and exists(base_directory + dirs)):
+        os.chdir(base_directory + dirs)
+        if(exists(fileName)):
+            with open(fileName, "w") as f:
+                f.write(data)
+                f.close()
+            print("File %s, has been overwritten!"%fileName)
+        else:
+            file = open(fileName, "w")
+            file.write(data)
+            file.close()
+            print("File %s has been created and the user has sucessfully written on it!"%fileName)
     else:
-        file = open(fileName, "w")
-        file.write(data)
-        file.close()
-        print("File %s has been created and the user has sucessfully written on it!"%fileName)
+        print("Path DNE")
+        #probably shuld let user know
 
 def run_server(host, port, dir=None):
-    global directory
+    global base_directory
     listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     if(dir == None):
         #use current directory as default
-        directory = os.getcwd() + "\Working"
-        os.chdir(directory)
+        base_directory = os.getcwd() +"\Working"
+        os.chdir(base_directory)
     else:
         #use specified directory
-        directory = dir
-        os.chdir(dir)
+        base_directory = dir
+        os.chdir(base_directory)
     try:
         listener.bind((host, port))
         #5 is the number of connections that socket.listen() will put in queue at most
@@ -140,18 +144,34 @@ def handle_client(conn, addr):
                             conn.sendall(data)
                         elif(len(requested_file) > 2 ):
                             split_request = requested_file.split("/")
-                            #split_request needs to look exactly like this [/, fileName]
-                            #max indices is 2
-                            if(len(split_request) > 2 or forbidden_chars in requested_file):
-                                data = "403: Forbidden\n"
-                                data = data.encode("utf-8")
-                                conn.sendall(data)
-                            elif(len(split_request) == 2):
-                                file = split_request[1]
-                                print("requested file name:", file)
-                                data = get_file_content(file)
-                                data = data.encode("utf-8")
-                                conn.sendall(data)
+                            print(split_request)
+                            
+                            counter = 1
+                            directories = ''
+                            while(counter < len(split_request)-1):
+                                directories += "\\" + split_request[counter]
+                                counter += 1
+
+                            print(directories)
+                            file = split_request[len(split_request) - 1]
+                            if('.' not in file):
+                                    data = "please include a file extenstion to your request. Like '.txt' for example."
+                                    data = data.encode("utf-8")
+                                    conn.sendall(data)
+                            else:
+                                print(file)
+                                
+                                if(forbidden_chars in directories or forbidden_chars in file):
+                                    data = "403: Forbidden\n"
+                                    data = data.encode("utf-8")
+                                    conn.sendall(data)
+                                else:
+                                    #GEORGE
+                                    #The cooment below should replace the old stuff we had (line 161)
+                                    #data = get_file_content(directories, file) 
+                                    data = get_file_content(file)
+                                    data = data.encode("utf-8")
+                                    conn.sendall(data)
 
                 elif(request_type=="POST"):
                     print("I have received a POST request")
@@ -174,27 +194,35 @@ def handle_client(conn, addr):
                             split_request = requested_file.split("/")
                             #split_request needs to look exactly like this [/, fileName]
                             #max indices is 2
-                            if(len(split_request) > 2 or forbidden_chars in requested_file):
+                            if(forbidden_chars in requested_file):
                                 data = "403: Forbidden\n"
                                 data = data.encode("utf-8")
                                 conn.sendall(data)
-                            elif(len(split_request) == 2):
-                                file = split_request[1]
-                                #print(split_request.split("\r\n\r\n"))
+                            else:
+                                print(split_request)
+                                counter = 1
+                                directories = ''
+                                while(counter < len(split_request)-1):
+                                    directories += "\\" + split_request[counter]
+                                    counter += 1
+
+                                print(directories)
+                                file = split_request[len(split_request) - 1]
+                                print(file)
                                 if('.' not in file):
                                     data = "please include a file extenstion to your request. Like '.txt' for example."
                                     data = data.encode("utf-8")
                                     conn.sendall(data)
                                 else:
-                                    print("requested file name:", file)
                                     split_request = data_from_client.split("\r\n\r\n")
                                     data_to_write = split_request[len(split_request) - 1]
+
                                     split_request = data_to_write.split("\r\n")
-                                    data_to_write = split_request[0]                                
-                                    create_overwrite(file, data_to_write)
+                                    data_to_write = split_request[0]
+                                    create_overwrite(file, data_to_write, directories)
                                     data = "The necessary actions have been taken accordingly for: %s"%file
                                     data = data.encode("utf-8")
-                                    conn.sendall(data)
+                                    conn.sendall(data) 
     finally:
         conn.close()
 
@@ -211,7 +239,7 @@ def main():
     '''
     #optional arguments
     parser.add_argument("--host", help="Input the server host ip", default="localhost", action="store")
-    parser.add_argument("--port", help="Input the server port number", type=int, default=1234, action="store")    
+    parser.add_argument("--port", help="Input the server port number", type=int, default=1274, action="store")    
     parser.add_argument('-v', required=False, help="Prints debugging messages.")
     parser.add_argument('-d', required=False, help="Specifies the directory that the server will use to read/write requested files. Default is the current directory when launching the application.")
     #required argument in the params above "required=" can be used to force a user 
