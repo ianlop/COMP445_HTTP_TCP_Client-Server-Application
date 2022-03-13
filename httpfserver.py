@@ -167,7 +167,7 @@ def handle_client(conn, addr):
                                     conn.sendall(data)
                                 else:
                                     #GEORGE
-                                    #The cooment below should replace the old stuff we had (line 161)
+                                    #The comment below should replace the old stuff we had (line 172)
                                     #data = get_file_content(directories, file) 
                                     data = get_file_content(file)
                                     data = data.encode("utf-8")
