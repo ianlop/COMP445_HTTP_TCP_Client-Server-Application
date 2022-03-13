@@ -18,6 +18,7 @@ import socket
 import threading
 import argparse
 import os
+from typing import final
 
 global base_directory
 global port_number
@@ -42,25 +43,22 @@ def get_directory():
 
     return content
 
-def get_file_content(fileName: str):
-    path = base_directory
-    print(path)
-    filePath = ''
+def get_file_content(fileName: str, dirs = None):
     fileContent = ''
-    for (dirpath, subDirs, files) in os.walk(path):
-        for file in files:
-            if fileName == file:
-                try:
-                    filePath = os.path.join(dirpath, fileName)
-
-                    fileResult = open(filePath, 'r')
-                    fileContent = fileResult.read()
-                    break
-                except OSError:
-                    fileContent = 'HTTP ERROR 400: Could not open/read file. Try another one.'
-                    break
-
-    if not fileContent:
+    if dirs == None:
+        dirs = '\\'
+    print(str(base_directory + dirs))
+    if exists(base_directory + dirs):
+        os.chdir(base_directory + dirs)
+        try:
+            with open(fileName, 'r') as f:
+                fileContent = f.read()
+                f.close()
+            if not fileContent:
+                fileContent= 'WARNING: File has no content.'
+        except OSError:
+            fileContent = 'HTTP ERROR 400: Could not open/read file. Try another one.'
+    else:
         fileContent = "HTTP ERROR 404: File could not be found."
 
     return fileContent
@@ -168,7 +166,7 @@ def handle_client(conn, addr, debugger):
                                     #GEORGE
                                     #The comment below should replace the old stuff we had (line 171)
                                     #data = get_file_content(directories, file) 
-                                    data = get_file_content(file)
+                                    data = get_file_content(file, directories)
                                     data = data.encode("utf-8")
                                     conn.sendall(data)
                 elif(request_type=="POST"):
