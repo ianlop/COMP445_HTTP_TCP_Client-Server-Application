@@ -243,8 +243,7 @@ def main():
     GET /
     httpclient.py --port 1234 --get "http://localhost/"
     httpclient.py --port 1234 --get "http://localhost/Directory3/"
-    httpclient.py --port 1234 --get "http://localhost/Directory1/"
-    httpclient.py --port 1234 --get "http://localhost/Directory4/"
+    httpclient.py --port 1234 --get "http://localhost/Directory2/"
 
     GET /filename.type
     httpclient.py --port 1234 --get "http://localhost/bar.txt"

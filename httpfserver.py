@@ -39,9 +39,7 @@ def get_directory(dirs = None):
             content += 'DIR: %s\r\n'%(item)
         elif os.path.isfile(os.path.join(path, item)):
             split_text = item.split('.')
-            print(split_text)
             split_text[0] = split_text[0].ljust(max_character_name)
-            print(split_text[0])
             content += 'FILE: %s TYPE: %s\r\n'%(split_text[0], split_text[1])
 
     if not content.strip():
@@ -53,7 +51,6 @@ def get_file_content(fileName: str, dirs = None):
     fileContent = ''
     if dirs == None:
         dirs = '\\'
-    print(str(base_directory + dirs))
     if exists(base_directory + dirs):
         os.chdir(base_directory + dirs)
         try:
